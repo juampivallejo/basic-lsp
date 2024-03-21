@@ -3,6 +3,7 @@ package analysis
 import (
 	"basiclsp/lsp"
 	"fmt"
+	"strings"
 )
 
 type State struct {
@@ -64,4 +65,59 @@ func (s *State) Definition(id int, uri string, position lsp.Position) lsp.Defini
 		},
 	}
 
+}
+func (s *State) TextDocumentCodeAction(id int, uri string) lsp.TextDocumentCodeActionResponse {
+	text := s.Documents[uri]
+	actions := []lsp.CodeAction{}
+
+	for row, line := range strings.Split(text, "\n") {
+		idx := strings.Index(line, "VS Code")
+		if idx >= 0 {
+			replaceChange := map[string][]lsp.TextEdit{}
+			replaceChange[uri] = []lsp.TextEdit{
+				{
+					Range:   LineRange(row, idx, idx+len("VS Code")),
+					NewText: "NeoVim",
+				},
+			}
+			actions = append(actions, lsp.CodeAction{
+				Title: "Replace VS **** with a superior editor",
+				Edit:  &lsp.WorkspaceEdit{Changes: replaceChange},
+			})
+			censorChange := map[string][]lsp.TextEdit{}
+			censorChange[uri] = []lsp.TextEdit{
+				{
+					Range:   LineRange(row, idx, idx+len("VS Code")),
+					NewText: "VS ****",
+				},
+			}
+			actions = append(actions, lsp.CodeAction{
+				Title: "Censor Shitty Editors",
+				Edit:  &lsp.WorkspaceEdit{Changes: censorChange},
+			})
+
+		}
+
+	}
+	response := lsp.TextDocumentCodeActionResponse{
+		Response: lsp.Response{
+			RPC: "2.0",
+			ID:  &id,
+		},
+		Result: actions,
+	}
+	return response
+}
+
+func LineRange(row, idx, end int) lsp.Range {
+	return lsp.Range{
+		Start: lsp.Position{
+			Line:      row,
+			Character: idx,
+		},
+		End: lsp.Position{
+			Line:      row,
+			Character: end,
+		},
+	}
 }

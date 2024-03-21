@@ -86,6 +86,14 @@ func handleMessage(logger *log.Logger, writer io.Writer, state analysis.State, m
 		}
 		msg := state.Definition(request.ID, request.Params.TextDocument.URI, request.Params.Position)
 		writer.Write([]byte(rpc.EncodeMessage(msg)))
+
+	case "textDocument/codeAction":
+		var request lsp.CodeActionRequest
+		if err := json.Unmarshal(contents, &request); err != nil {
+			logger.Printf("Error Parsing textDocument/codeAction request\n%s", err)
+		}
+		msg := state.TextDocumentCodeAction(request.ID, request.Params.TextDocument.URI)
+		writer.Write([]byte(rpc.EncodeMessage(msg)))
 	}
 
 }
