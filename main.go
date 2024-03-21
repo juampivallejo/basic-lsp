@@ -20,6 +20,7 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Split(rpc.Split)
 	state := analysis.NewState()
+	writer := os.Stdout
 
 	for scanner.Scan() {
 		msg := scanner.Bytes()
@@ -28,11 +29,11 @@ func main() {
 			logger.Printf("Got an error: %s", err)
 			continue
 		}
-		handleMessage(logger, state, method, contents)
+		handleMessage(logger, writer, state, method, contents)
 	}
 }
 
-func handleMessage(logger *log.Logger, state analysis.State, method string, contents []byte) {
+func handleMessage(logger *log.Logger, writer io.Writer, state analysis.State, method string, contents []byte) {
 	logger.Printf("Received msg with method: %s", method)
 
 	switch method {
@@ -47,7 +48,6 @@ func handleMessage(logger *log.Logger, state analysis.State, method string, cont
 		// Reply
 		msg := lsp.NewInitializeResponse(request.ID)
 		reply := rpc.EncodeMessage(msg)
-		writer := os.Stdout
 		writer.Write([]byte(reply))
 
 		logger.Println("Sent initialize reply")
@@ -71,6 +71,13 @@ func handleMessage(logger *log.Logger, state analysis.State, method string, cont
 			state.UpdateDocument(notification.Params.TextDocument.URI, change.Text)
 		}
 
+	case "textDocument/hover":
+		var request lsp.HoverRequest
+		if err := json.Unmarshal(contents, &request); err != nil {
+			logger.Printf("Error Parsing textDocument/hover request\n%s", err)
+		}
+		msg := state.Hover(request.ID, request.Params.TextDocument.URI, request.Params.Position)
+		writer.Write([]byte(rpc.EncodeMessage(msg)))
 	}
 
 }
