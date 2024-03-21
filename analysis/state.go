@@ -38,3 +38,30 @@ func (s *State) Hover(id int, uri string, position lsp.Position) lsp.HoverRespon
 	}
 
 }
+
+func (s *State) Definition(id int, uri string, position lsp.Position) lsp.DefinitionResponse {
+	// In real life this would look up the type definition
+
+	// document := s.Documents[uri]
+
+	return lsp.DefinitionResponse{
+		Response: lsp.Response{
+			ID:  &id,
+			RPC: "2.0",
+		},
+		Result: lsp.Location{
+			URI: uri,
+			Range: lsp.Range{
+				Start: lsp.Position{
+					Line:      1,
+					Character: 0,
+				},
+				End: lsp.Position{
+					Line:      1,
+					Character: 2,
+				},
+			},
+		},
+	}
+
+}

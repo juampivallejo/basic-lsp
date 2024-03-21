@@ -78,6 +78,14 @@ func handleMessage(logger *log.Logger, writer io.Writer, state analysis.State, m
 		}
 		msg := state.Hover(request.ID, request.Params.TextDocument.URI, request.Params.Position)
 		writer.Write([]byte(rpc.EncodeMessage(msg)))
+
+	case "textDocument/definition":
+		var request lsp.DefinitionRequest
+		if err := json.Unmarshal(contents, &request); err != nil {
+			logger.Printf("Error Parsing textDocument/definition request\n%s", err)
+		}
+		msg := state.Definition(request.ID, request.Params.TextDocument.URI, request.Params.Position)
+		writer.Write([]byte(rpc.EncodeMessage(msg)))
 	}
 
 }

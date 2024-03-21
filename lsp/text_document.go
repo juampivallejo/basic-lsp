@@ -48,3 +48,13 @@ type DidChangeTextDocumentParams struct {
 type TextDocumentContentChangeEvent struct {
 	Text string `json:"text"`
 }
+
+type Location struct {
+	URI   string `json:"uri"`
+	Range Range  `json:"range"`
+}
+
+type Range struct {
+	Start Position `json:"start"`
+	End   Position `json:"end"`
+}
