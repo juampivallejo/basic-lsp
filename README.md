@@ -7,3 +7,5 @@
 This is a basic LSP integration just for fun.
 
 ## Testing
+
+string
