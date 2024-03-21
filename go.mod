@@ -1,0 +1,3 @@
+module basiclsp
+
+go 1.21.6
