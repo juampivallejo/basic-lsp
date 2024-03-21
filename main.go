@@ -47,8 +47,7 @@ func handleMessage(logger *log.Logger, writer io.Writer, state analysis.State, m
 
 		// Reply
 		msg := lsp.NewInitializeResponse(request.ID)
-		reply := rpc.EncodeMessage(msg)
-		writer.Write([]byte(reply))
+		writeResponse(writer, msg)
 
 		logger.Println("Sent initialize reply")
 
@@ -77,7 +76,7 @@ func handleMessage(logger *log.Logger, writer io.Writer, state analysis.State, m
 			logger.Printf("Error Parsing textDocument/hover request\n%s", err)
 		}
 		msg := state.Hover(request.ID, request.Params.TextDocument.URI, request.Params.Position)
-		writer.Write([]byte(rpc.EncodeMessage(msg)))
+		writeResponse(writer, msg)
 
 	case "textDocument/definition":
 		var request lsp.DefinitionRequest
@@ -85,7 +84,7 @@ func handleMessage(logger *log.Logger, writer io.Writer, state analysis.State, m
 			logger.Printf("Error Parsing textDocument/definition request\n%s", err)
 		}
 		msg := state.Definition(request.ID, request.Params.TextDocument.URI, request.Params.Position)
-		writer.Write([]byte(rpc.EncodeMessage(msg)))
+		writeResponse(writer, msg)
 
 	case "textDocument/codeAction":
 		var request lsp.CodeActionRequest
@@ -93,8 +92,23 @@ func handleMessage(logger *log.Logger, writer io.Writer, state analysis.State, m
 			logger.Printf("Error Parsing textDocument/codeAction request\n%s", err)
 		}
 		msg := state.TextDocumentCodeAction(request.ID, request.Params.TextDocument.URI)
-		writer.Write([]byte(rpc.EncodeMessage(msg)))
+		writeResponse(writer, msg)
+
+	case "textDocument/completion":
+		var request lsp.CompletionRequest
+		if err := json.Unmarshal(contents, &request); err != nil {
+			logger.Printf("Error Parsing textDocument/completion request\n%s", err)
+		}
+		msg := state.TextDocumentCompletion(request.ID, request.Params.TextDocument.URI)
+		writeResponse(writer, msg)
+
 	}
+
+}
+
+func writeResponse(writer io.Writer, msg any) {
+	reply := rpc.EncodeMessage(msg)
+	writer.Write([]byte(reply))
 
 }
 

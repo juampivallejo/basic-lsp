@@ -10,3 +10,5 @@ This is a basic LSP integration just for fun.
 
 This should also work on VS \*\*\*\*
 This should also work on NeoVim
+
+autocompleted NeoVim (BTW)

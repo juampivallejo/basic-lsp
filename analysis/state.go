@@ -121,3 +121,24 @@ func LineRange(row, idx, end int) lsp.Range {
 		},
 	}
 }
+
+func (s *State) TextDocumentCompletion(id int, uri string) lsp.CompletionResponse {
+	// Here should ask for good completions based on what the user is trying to type
+	completions := []lsp.CompletionItem{
+		{
+			Label:         "NeoVim (BTW)",
+			Detail:        "Best Editor",
+			Documentation: "Not for noobs?",
+		},
+	}
+
+	response := lsp.CompletionResponse{
+		Response: lsp.Response{
+			RPC: "2.0",
+			ID:  &id,
+		},
+		Result: completions,
+	}
+	return response
+
+}
