@@ -20,7 +20,7 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Split(rpc.Split)
 	state := analysis.NewState()
-	writer := os.Stdout
+	responseWriter := GetResponseWriterFunc(os.Stdout)
 
 	for scanner.Scan() {
 		msg := scanner.Bytes()
@@ -29,11 +29,11 @@ func main() {
 			logger.Printf("Got an error: %s", err)
 			continue
 		}
-		handleMessage(logger, writer, state, method, contents)
+		handleMessage(logger, responseWriter, state, method, contents)
 	}
 }
 
-func handleMessage(logger *log.Logger, writer io.Writer, state analysis.State, method string, contents []byte) {
+func handleMessage(logger *log.Logger, sendResponse func(msg any), state analysis.State, method string, contents []byte) {
 	logger.Printf("Received msg with method: %s", method)
 
 	switch method {
@@ -47,7 +47,7 @@ func handleMessage(logger *log.Logger, writer io.Writer, state analysis.State, m
 
 		// Reply
 		msg := lsp.NewInitializeResponse(request.ID)
-		writeResponse(writer, msg)
+		sendResponse(msg)
 
 		logger.Println("Sent initialize reply")
 
@@ -59,7 +59,7 @@ func handleMessage(logger *log.Logger, writer io.Writer, state analysis.State, m
 		logger.Printf("Opened: %s %s", notification.Params.TextDocument.URI, notification.Params.TextDocument.LanguageId)
 
 		diagnostics := state.OpenDocument(notification.Params.TextDocument.URI, notification.Params.TextDocument.Text)
-		writeResponse(writer, lsp.PublishDiagnosticNotification{
+		sendResponse(lsp.PublishDiagnosticNotification{
 			Notification: lsp.Notification{RPC: "2.0", Method: "textDocument/publishDiagnostics"},
 			Params: lsp.PublishDiagnosticParams{
 				URI:         notification.Params.TextDocument.URI,
@@ -75,7 +75,7 @@ func handleMessage(logger *log.Logger, writer io.Writer, state analysis.State, m
 		logger.Printf("Changed: %s %d", notification.Params.TextDocument.URI, notification.Params.TextDocument.Version)
 		for _, change := range notification.Params.ContentChanges {
 			diagnostics := state.UpdateDocument(notification.Params.TextDocument.URI, change.Text)
-			writeResponse(writer, lsp.PublishDiagnosticNotification{
+			sendResponse(lsp.PublishDiagnosticNotification{
 				Notification: lsp.Notification{RPC: "2.0", Method: "textDocument/publishDiagnostics"},
 				Params: lsp.PublishDiagnosticParams{
 					URI:         notification.Params.TextDocument.URI,
@@ -90,7 +90,7 @@ func handleMessage(logger *log.Logger, writer io.Writer, state analysis.State, m
 			logger.Printf("Error Parsing textDocument/hover request\n%s", err)
 		}
 		msg := state.Hover(request.ID, request.Params.TextDocument.URI, request.Params.Position)
-		writeResponse(writer, msg)
+		sendResponse(msg)
 
 	case "textDocument/definition":
 		var request lsp.DefinitionRequest
@@ -98,7 +98,7 @@ func handleMessage(logger *log.Logger, writer io.Writer, state analysis.State, m
 			logger.Printf("Error Parsing textDocument/definition request\n%s", err)
 		}
 		msg := state.Definition(request.ID, request.Params.TextDocument.URI, request.Params.Position)
-		writeResponse(writer, msg)
+		sendResponse(msg)
 
 	case "textDocument/codeAction":
 		var request lsp.CodeActionRequest
@@ -106,7 +106,7 @@ func handleMessage(logger *log.Logger, writer io.Writer, state analysis.State, m
 			logger.Printf("Error Parsing textDocument/codeAction request\n%s", err)
 		}
 		msg := state.TextDocumentCodeAction(request.ID, request.Params.TextDocument.URI)
-		writeResponse(writer, msg)
+		sendResponse(msg)
 
 	case "textDocument/completion":
 		var request lsp.CompletionRequest
@@ -114,16 +114,16 @@ func handleMessage(logger *log.Logger, writer io.Writer, state analysis.State, m
 			logger.Printf("Error Parsing textDocument/completion request\n%s", err)
 		}
 		msg := state.TextDocumentCompletion(request.ID, request.Params.TextDocument.URI)
-		writeResponse(writer, msg)
-
+		sendResponse(msg)
 	}
 
 }
 
-func writeResponse(writer io.Writer, msg any) {
-	reply := rpc.EncodeMessage(msg)
-	writer.Write([]byte(reply))
-
+func GetResponseWriterFunc(writer io.Writer) func(msg any) {
+	return func(msg any) {
+		reply := rpc.EncodeMessage(msg)
+		writer.Write([]byte(reply))
+	}
 }
 
 func getLogger(filename string) *log.Logger {
