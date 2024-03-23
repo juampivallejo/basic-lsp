@@ -12,3 +12,6 @@ This should also work on VS \*\*\*\*
 This should also work on NeoVim
 
 autocompleted NeoVim (BTW)
+
+diagnostic test for VS Code
+VS Code

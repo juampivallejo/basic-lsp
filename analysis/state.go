@@ -15,12 +15,15 @@ func NewState() State {
 	return State{Documents: map[string]string{}}
 }
 
-func (s *State) OpenDocument(uri, text string) {
+func (s *State) OpenDocument(uri, text string) []lsp.Diagnostic {
 	s.Documents[uri] = text
+
+	return getDiagnostics(text)
 }
 
-func (s *State) UpdateDocument(uri, text string) {
+func (s *State) UpdateDocument(uri, text string) []lsp.Diagnostic {
 	s.Documents[uri] = text
+	return getDiagnostics(text)
 }
 
 func (s *State) Hover(id int, uri string, position lsp.Position) lsp.HoverResponse {
@@ -42,8 +45,6 @@ func (s *State) Hover(id int, uri string, position lsp.Position) lsp.HoverRespon
 
 func (s *State) Definition(id int, uri string, position lsp.Position) lsp.DefinitionResponse {
 	// In real life this would look up the type definition
-
-	// document := s.Documents[uri]
 
 	return lsp.DefinitionResponse{
 		Response: lsp.Response{
@@ -141,4 +142,22 @@ func (s *State) TextDocumentCompletion(id int, uri string) lsp.CompletionRespons
 	}
 	return response
 
+}
+
+func getDiagnostics(text string) []lsp.Diagnostic {
+	diagnostics := []lsp.Diagnostic{}
+	for row, line := range strings.Split(text, "\n") {
+		idx := strings.Index(line, "VS Code")
+		if idx >= 0 {
+			d := lsp.Diagnostic{
+				Range:    LineRange(row, idx, idx+len("VS Code")),
+				Severity: 1,
+				Source:   "Common Sense",
+				Message:  "Replace for superior editor",
+			}
+			diagnostics = append(diagnostics, d)
+		}
+	}
+
+	return diagnostics
 }
